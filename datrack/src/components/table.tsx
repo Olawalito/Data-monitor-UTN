@@ -33,7 +33,7 @@ export default function Table(){
                     24/9/2026
                 </td>
                 <td className="md:px-6 px-1">
-                    <button className="bg-red-600 text-white p-3 my-4 font-medium text-fg-brand hover:underline">Remove</button>
+                    <button className="bg-red-600 rounded-2xl text-white p-3 my-4 font-medium text-fg-brand transition delay-150 duration-300 ease-in-out hover:-translate-y-1 hover:scale-110">Remove</button>
                 </td>
             </tr>
             <tr className="odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default">
@@ -47,7 +47,7 @@ export default function Table(){
                     24/9/2026
                 </td>
                 <td className="md:px-6 px-1">
-                    <button className="bg-red-600 text-white p-3 my-4 font-medium text-fg-brand hover:underline">Remove</button>
+                    <button className="bg-red-600 rounded-2xl text-white p-3 my-4 font-medium text-fg-brand transition delay-150 duration-300 ease-in-out hover:-translate-y-1 hover:scale-110">Remove</button>
                 </td>
             </tr>
         </tbody>
