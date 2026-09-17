@@ -1,10 +1,10 @@
-
+import { dataInfo } from "../data/data"
 
 export default function Table(){
     return(
         <>
-<div className="relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default md:mt-50 mt-25 mx-1 md:mx-32">
-    <table className="w-full text-sm text-left rtl:text-right text-body ">
+<div className="relative bg-white rounded-2xl overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default md:mt-50 mt-25 mx-1 md:mx-32">
+    <table className="w-full text-sm text-left rtl:text-right text-body">
         <thead className="bg-neutral-secondary-soft border-b border-default">
             <tr>
                 <th scope="col" className="md:px-6 px-1 py-3 font-medium">
@@ -22,34 +22,26 @@ export default function Table(){
             </tr>
         </thead>
         <tbody>
-            <tr className="odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default">
+            {dataInfo.map(
+                (data) => (
+                 <tr className="odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default">
                 <th scope="row" className="md:px-6 px-1 font-medium text-heading whitespace-nowrap">
-                   09020775810
+                   {data.number}
                 </th>
                 <td className="md:px-6 px-1">
-                    100MB
+                    {data.balance}
                 </td>
                 <td className="md:px-6 px-1">
-                    24/9/2026
+                    {data.Expiry}
                 </td>
                 <td className="md:px-6 px-1">
                     <button className="bg-red-600 rounded-2xl text-white p-3 my-4 font-medium text-fg-brand transition delay-150 duration-300 ease-in-out hover:-translate-y-1 hover:scale-110">Remove</button>
                 </td>
             </tr>
-            <tr className="odd:bg-neutral-primary even:bg-neutral-secondary-soft border-b border-default">
-                <th scope="row" className="md:px-6 px-1 font-medium text-heading whitespace-nowrap">
-                   0902077
-                </th>
-                <td className="md:px-6 px-1">
-                    100MB
-                </td>
-                <td className="md:px-6 px-1">
-                    24/9/2026
-                </td>
-                <td className="md:px-6 px-1">
-                    <button className="bg-red-600 rounded-2xl text-white p-3 my-4 font-medium text-fg-brand transition delay-150 duration-300 ease-in-out hover:-translate-y-1 hover:scale-110">Remove</button>
-                </td>
-            </tr>
+                )
+            )}
+            
+
         </tbody>
     </table>
 </div>
