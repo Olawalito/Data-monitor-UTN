@@ -8,8 +8,8 @@ export default function Header(){
 
     return(
         <div className="font-Inter">
-<header className="fixed w-full z-20 top-0 inset-s-0">
-  <nav className="bg-neutral-primary bg-gray-50 md:mx-1 ">
+<header className="fixed w-full z-20 top-0 inset-s-0 bg-white">
+  <nav className="bg-neutral-primary md:mx-1 ">
       <div className="flex flex-wrap justify-between items-center mx-auto  p-4">
           <a href="https://flowbite.com" className="flex items-center space-x-3 rtl:space-x-reverse">
               <img src={logo} className="h-10 md:h-17" alt="Flowbite Logo" />
@@ -17,7 +17,7 @@ export default function Header(){
           <div className="flex items-center md:space-x-6 space-x-2.5">
               <label className="text-xs md:text-sm text-body">Oyekan Olawale
               </label>
-              <button onClick={openModal === false ? () => setOpenModal(true) : ( ) => setOpenModal(false) } className="md:text-sm text-xs font-medium text-fg-brand md:p-4 p-3 transition delay-150 duration-300 ease-in-out hover:-translate-y-1 hover:scale-110 rounded-2xl bg-yellow-300">Add Number +</button>
+              <button onClick={openModal === false ? () => setOpenModal(true) : ( ) => setOpenModal(false) } className="md:text-sm text-xs font-medium text-fg-brand md:p-4 p-3 transition delay-150 duration-300 ease-in-out hover:-translate-y-1 hover:scale-110 rounded-2xl bg-yellow-300">+ Add Number</button>
              </div>
              {
                 openModal && 

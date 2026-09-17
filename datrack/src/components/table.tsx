@@ -1,8 +1,8 @@
+
+
 export default function Table(){
     return(
         <>
-        
-
 <div className="relative overflow-x-auto bg-neutral-primary-soft shadow-xs rounded-base border border-default md:mt-50 mt-25 mx-1 md:mx-32">
     <table className="w-full text-sm text-left rtl:text-right text-body ">
         <thead className="bg-neutral-secondary-soft border-b border-default">

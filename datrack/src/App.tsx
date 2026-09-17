@@ -1,9 +1,7 @@
-import Header from "./components/Header";
-import Table from "./components/table";
+import Dashboard from "./pages/dashboard";
 import Login from "./pages/Login";
 
 function App() {
-
   return (
     <>
     <Login/>
