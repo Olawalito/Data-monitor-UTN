@@ -1,208 +1,56 @@
-import { useState } from "react";
-import logo from "../assets/logo.png";
-import VerifyOtpCard from "../components/VerifyOtpCard";
+import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ApiRequestError } from '../api/client'
+import { useAuth } from '../auth/AuthProvider'
+import logo from '../assets/logo.png'
 
 export default function Login() {
-    const [form, setForm] = useState<"Login" | "Sign Up">("Login");
-    const [showOtpCard, setShowOtpCard] = useState(false);
+  const { session, loading, login } = useAuth()
+  const navigate = useNavigate()
+  const [username, setUsername] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
-    const handleSubmit = (event: React.FormEvent) => {
-      event.preventDefault();
-      setShowOtpCard(true);
-    };
+  useEffect(() => {
+    if (!loading && session) navigate('/dashboard', { replace: true })
+  }, [loading, navigate, session])
 
-    if (showOtpCard) {
-      return (
-        <div className="min-h-screen bg-[#f5f7fc] flex items-center justify-center px-4">
-          <VerifyOtpCard mode={form} onBack={() => setShowOtpCard(false)} />
-        </div>
-      );
+  async function handleSubmit(event: React.FormEvent) {
+    event.preventDefault()
+    setError('')
+    setSubmitting(true)
+    try {
+      await login(username.trim(), password)
+      navigate('/dashboard', { replace: true })
+    } catch (caught) {
+      setError(caught instanceof ApiRequestError ? caught.message : 'Unable to sign in. Check that the local service is running.')
+    } finally {
+      setSubmitting(false)
     }
+  }
 
   return (
-    <div className="min-h-screen bg-[#f5f7fc] flex items-center justify-center px-4">
-      <div className="w-full max-w-95 bg-white rounded-md shadow-[0_2px_12px_rgba(0,0,0,0.08)] px-5 py-5">
-                {/* Logo */}
-        <div className="flex justify-center mb-6">
-          <img
-            src={logo}
-            alt="Datrack Logo"
-            className="h-10 w-auto object-contain"
-          />
-        </div>
-
-        {/* Description */}
-        <p className="text-center text-[15px] leading-4 text-gray-600 mb-3">
-          Monitor data balance and bundle expiry across
-          <br />
-          your MTN SIMs.
-        </p>
-
-        {/* Tabs */}
-        <div className="grid grid-cols-2 bg-[#edf2ff] rounded-md h-7 mb-4">
-          <button className={ form === "Login" ?`bg-white rounded-md text-[15px] font-medium text-gray-800 shadow-sm` : `bg-gray 600`}  onClick={() => setForm("Login") }>
-            Sign In
-          </button>
-
-          <button className={ form === "Sign Up" ?`bg-white rounded-md text-[15px] font-medium text-gray-800 shadow-sm` : `bg-gray 600`} onClick={() => setForm("Sign Up") }>
-            Create Account
-          </button>
-        </div>
-
-        { form === "Sign Up" && (<>
-        <form className="space-y-2.5" onSubmit={handleSubmit}>
-
-        {/* Full Name */}
-        <div>
-          <label className="block text-[12px] font-medium text-gray-700 mb-1">
-            Full name
+    <main className="relative grid min-h-screen place-items-center overflow-hidden bg-[#f5f7fb] px-5 py-10">
+      <div className="absolute -left-24 top-12 h-80 w-80 rounded-full bg-[#ffdd00]/20 blur-3xl" />
+      <div className="absolute -right-24 bottom-0 h-96 w-96 rounded-full bg-blue-200/30 blur-3xl" />
+      <section className="relative w-full max-w-md rounded-3xl border border-white bg-white/95 p-8 shadow-[0_24px_80px_rgba(15,23,42,0.12)] sm:p-10">
+        <img src={logo} alt="Datrack" className="mb-8 h-11 w-auto object-contain" />
+        <p className="mb-2 text-xs font-bold uppercase tracking-[0.22em] text-[#927900]">Local MTN monitor</p>
+        <h1 className="text-3xl font-semibold tracking-tight text-slate-950">Welcome back</h1>
+        <p className="mt-3 text-sm leading-6 text-slate-500">Sign in on this computer to view approved company SIM balances and expiry dates.</p>
+        <form className="mt-8 space-y-5" onSubmit={handleSubmit}>
+          <label className="block text-sm font-medium text-slate-700">Username
+            <input autoComplete="username" className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-slate-900 outline-none transition focus:border-[#d6b500] focus:bg-white focus:ring-4 focus:ring-[#ffdd00]/20" value={username} onChange={(event) => setUsername(event.target.value)} required />
           </label>
-          <input
-            type="text"
-            placeholder="Enter your full name"
-            className="w-full h-7 rounded-sm bg-[#edf2ff] border border-transparent px-2.5 text-[9px] text-gray-700 placeholder:text-gray-400 outline-none focus:border-[#f2b900]"
-          />
-        </div>
-        {/* Phone */}
-        <div>
-          <label className="block text-[12px] font-medium text-gray-700 mb-1">
-            Phone number
+          <label className="block text-sm font-medium text-slate-700">Password
+            <input type="password" autoComplete="current-password" className="mt-2 h-12 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 text-slate-900 outline-none transition focus:border-[#d6b500] focus:bg-white focus:ring-4 focus:ring-[#ffdd00]/20" value={password} onChange={(event) => setPassword(event.target.value)} required />
           </label>
-          <input
-            type="tel"
-            placeholder="0803 123 4567"
-            className="w-full h-7 rounded-sm bg-[#edf2ff] border border-transparent px-2.5 text-[9px] text-gray-700 placeholder:text-gray-400 outline-none focus:border-[#f2b900]"
-          />
-        </div>
-
-        {/* Password */}
-        <div>
-          <label className="block text-[12px] font-medium text-gray-700 mb-1">
-            Password
-          </label>
-          <input
-            type="password"
-            placeholder="Create a secure password"
-            className="w-full h-7 rounded-sm bg-[#edf2ff] border border-transparent px-2.5 text-[9px] text-gray-700 placeholder:text-gray-400 outline-none focus:border-[#f2b900]"
-          />
-        </div>
-
-        {/* Confirm Password */}
-        <div>
-          <label className="block text-[12px] font-medium text-gray-700 mb-1">
-            Confirm password
-          </label>
-          <input
-            type="password"
-            placeholder="Confirm your password"
-            className="w-full h-7 rounded-sm bg-[#edf2ff] border border-transparent px-2.5 text-[9px] text-gray-700 placeholder:text-gray-400 outline-none focus:border-[#f2b900]"
-          />
-        </div>
-
-        {/* Terms */}
-        <label className="flex items-start gap-1.5 pt-0.5 text-[12px] text-gray-500">
-          <input
-            type="checkbox"
-            className="mt-0.5 w-2.5 h-2.5 accent-[#f2b900]"
-          />
-          <span>
-            I agree to the{" "}
-            <button
-              type="button"
-              className="text-[#a98500] hover:underline"
-            >
-              Terms of Service
-            </button>{" "}
-            and{" "}
-            <button
-              type="button"
-              className="text-[#a98500] hover:underline"
-            >
-              Privacy Policy
-            </button>
-          </span>
-        </label>
-
-        {/* Create Account */}
-        <button
-          type="submit"
-          className="w-full h-7 bg-[#f2b900] hover:bg-[#e5ad00] text-black rounded-sm text-[9px] font-semibold transition flex items-center justify-center gap-1"
-        >
-          Create Account
-          <span className="text-sm leading-none">→</span>
-        </button>
-
-      </form></>)}
-
-        { form === "Login" && ( <form onSubmit={handleSubmit}>
-
-        {/* Phone */}
-        <div className="mb-2.5">
-          <label className="block text-[12px] font-medium text-gray-700 mb-1">
-            Phone number
-          </label>
-
-          <div className="relative">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
-              ▣
-            </span>
-
-            <input
-              type="text"
-              placeholder="name@work.com or 0803 123 4567"
-              className="w-full h-7 rounded-sm bg-[#edf2ff] border border-transparent pl-7 pr-2 text-[9px] text-gray-700 placeholder:text-gray-400 outline-none focus:border-[#f2b900]"
-            />
-          </div>
-        </div>
-
-        {/* Password */}
-        <div className="mb-2">
-          <div className="flex items-center justify-between mb-1">
-            <label className="text-[12px] font-medium text-gray-700">
-              Password
-            </label>
-
-            <button className="text-[12px] text-[#a98500] hover:underline">
-              Forgot password?
-            </button>
-          </div>
-
-          <div className="relative">
-            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">
-              ♙
-            </span>
-
-            <input
-              type="password"
-              placeholder="Enter password"
-              className="w-full h-7 rounded-sm bg-[#edf2ff] border border-transparent pl-7 pr-8 text-[9px] text-gray-700 placeholder:text-gray-400 outline-none focus:border-[#f2b900]"
-            />
-
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-[10px]">
-              ◉
-            </span>
-          </div>
-        </div>
-
-        {/* Remember / Status */}
-        <div className="flex items-center justify-between mb-3">
-          <label className="flex items-center gap-1 text-[12px] text-gray-600">
-            <input
-              type="checkbox"
-              defaultChecked
-              className="w-2.5 h-2.5 accent-[#f2b900]"
-            />
-            Remember this console
-          </label>
-        </div>
-
-        {/* Sign In */}
-        <button type="submit" className="w-full h-7 bg-[#f2b900] hover:bg-[#e5ad00] text-black rounded-sm text-[16px] font-semibold transition flex items-center justify-center gap-1">
-          Sign In to Datrack
-          <span className="text-sm leading-none">→</span>
-        </button>
-      </form>) }
-      </div>
-    </div>
-  );
+          {error && <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
+          <button disabled={submitting} className="h-12 w-full rounded-xl bg-[#ffdd00] font-semibold text-slate-950 shadow-sm transition hover:bg-[#f2cf00] disabled:cursor-wait disabled:opacity-60">{submitting ? 'Signing in…' : 'Sign in'}</button>
+        </form>
+        <p className="mt-7 text-center text-xs text-slate-400">Restricted to authorised Unified TrustNet staff</p>
+      </section>
+    </main>
+  )
 }

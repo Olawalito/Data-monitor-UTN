@@ -1,7 +1,7 @@
 import Header from "../components/Header"
 import Table from "../components/table"
 
-export default function(){
+export default function Dashboard(){
     return(
         <>
         <Header/>
