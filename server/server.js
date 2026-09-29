@@ -1,5 +1,5 @@
 const path = require('node:path');
-require('dotenv').config({ path: path.join(__dirname, '.env') });
+require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
 
 const { loadConfig } = require('./src/config');
 const { createAuthService } = require('./src/auth');

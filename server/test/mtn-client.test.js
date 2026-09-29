@@ -62,8 +62,12 @@ test('uses client credentials and sends the required Plans v2 request', async ()
   const result = await client.getDataPlan('+2348012345678');
 
   assert.equal(calls[0].options.method, 'POST');
-  assert.equal(calls[0].options.headers.Authorization, `Basic ${Buffer.from('key-value:secret-value').toString('base64')}`);
-  assert.equal(calls[0].options.body, 'grant_type=client_credentials');
+  assert.equal(calls[0].options.headers.Authorization, undefined);
+  assert.deepEqual(Object.fromEntries(new URLSearchParams(calls[0].options.body)), {
+    client_id: 'key-value',
+    client_secret: 'secret-value',
+  });
+  assert.equal(new URL(calls[0].url).searchParams.get('grant_type'), 'client_credentials');
   const plansUrl = new URL(calls[1].url);
   assert.equal(plansUrl.pathname, '/v2/customers/%2B2348012345678/plans');
   assert.deepEqual(Object.fromEntries(plansUrl.searchParams), {

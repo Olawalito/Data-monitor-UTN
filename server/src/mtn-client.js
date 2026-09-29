@@ -43,14 +43,19 @@ function createMtnClient({
   }
 
   async function fetchToken() {
-    const response = await request(tokenUrl, {
+    const url = new URL(tokenUrl);
+    url.searchParams.set('grant_type', 'client_credentials');
+    const body = new URLSearchParams({
+      client_id: consumerKey,
+      client_secret: consumerSecret,
+    });
+    const response = await request(url, {
       method: 'POST',
       headers: {
-        Authorization: `Basic ${Buffer.from(`${consumerKey}:${consumerSecret}`).toString('base64')}`,
         'Content-Type': 'application/x-www-form-urlencoded',
         Accept: 'application/json',
       },
-      body: 'grant_type=client_credentials',
+      body: body.toString(),
     }, 'MTN_AUTH_FAILED');
 
     if (!response.ok) throw safeError('MTN_AUTH_FAILED');

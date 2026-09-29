@@ -9,7 +9,7 @@ const { hashPassword, createAuthService } = require('../src/auth');
 const { createSimStore } = require('../src/sim-store');
 const { createApp } = require('../src/app');
 
-async function fixture({ withStatic = false } = {}) {
+async function fixture({ withStatic = false, dottedStaticPath = false } = {}) {
   const directory = await fs.mkdtemp(path.join(os.tmpdir(), 'datrack-api-'));
   const dataPath = path.join(directory, 'sims.json');
   await fs.writeFile(dataPath, JSON.stringify({ version: 1, sims: [] }));
@@ -44,8 +44,8 @@ async function fixture({ withStatic = false } = {}) {
   };
   let staticDir;
   if (withStatic) {
-    staticDir = path.join(directory, 'dist');
-    await fs.mkdir(staticDir);
+    staticDir = dottedStaticPath ? path.join(directory, '.worktree', 'dist') : path.join(directory, 'dist');
+    await fs.mkdir(staticDir, { recursive: true });
     await fs.writeFile(path.join(staticDir, 'index.html'), '<!doctype html><title>Datrack app</title>');
   }
   return { app: createApp({ config, auth, store, refreshService, staticDir }), store };
@@ -166,4 +166,10 @@ test('serves the production SPA without turning unknown API routes into HTML', a
 
   const missing = await request(app).get('/api/missing').expect(404);
   assert.equal(missing.body.error.code, 'NOT_FOUND');
+});
+
+test('serves the SPA when the checkout path contains a hidden directory segment', async () => {
+  const { app } = await fixture({ withStatic: true, dottedStaticPath: true });
+  const spa = await request(app).get('/dashboard').expect(200);
+  assert.match(spa.text, /Datrack app/);
 });

@@ -146,7 +146,7 @@ function createApp({ config, auth, store, refreshService, staticDir }) {
     app.use(express.static(staticDir, { index: false }));
     app.use((req, res, next) => {
       if (req.method !== 'GET') return next();
-      return res.sendFile(path.join(staticDir, 'index.html'));
+      return res.sendFile('index.html', { root: staticDir });
     });
   }
 
