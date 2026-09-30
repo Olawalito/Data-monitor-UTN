@@ -73,6 +73,7 @@ test('logs in, restores the session, and logs out with a protected cookie', asyn
 
   const signedIn = await login(agent, 'admin', 'admin password').expect(200);
   const cookie = signedIn.headers['set-cookie'][0];
+  assert.doesNotMatch(cookie, /Max-Age|Expires/i);
   assert.match(cookie, /datrack_session=/);
   assert.match(cookie, /HttpOnly/);
   assert.match(cookie, /SameSite=Strict/);

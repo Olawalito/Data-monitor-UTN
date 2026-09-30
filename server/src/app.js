@@ -2,7 +2,6 @@ const express = require('express');
 const path = require('node:path');
 
 const COOKIE_NAME = 'datrack_session';
-const SESSION_MAX_AGE_MS = 8 * 60 * 60 * 1000;
 
 function success(res, data, status = 200) {
   return res.status(status).json({ data });
@@ -78,7 +77,6 @@ function createApp({ config, auth, store, refreshService, staticDir }) {
         sameSite: 'strict',
         secure: false,
         path: '/',
-        maxAge: SESSION_MAX_AGE_MS,
       });
       return success(res, result.session);
     } catch (error) {

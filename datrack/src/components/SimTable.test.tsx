@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { expect, test, vi } from 'vitest'
 import type { SimRecord } from '../types/api'
@@ -16,6 +16,10 @@ test('renders formatted balances, expiry, and safe health states', () => {
   expect(screen.getByText(/10 Oct 2026/)).toBeInTheDocument()
   expect(screen.getByText('Stale')).toBeInTheDocument()
   expect(screen.getByText('Needs attention')).toBeInTheDocument()
+  expect(screen.getByRole('columnheader', { name: 'Last successful' })).toBeInTheDocument()
+  const staleRow = screen.getByRole('row', { name: /Field tablet/ })
+  expect(within(staleRow).getByText(/28 Sept 2026/)).toBeInTheDocument()
+  expect(within(staleRow).queryByText(/29 Sept 2026/)).not.toBeInTheDocument()
   expect(screen.getAllByText('Not available').length).toBeGreaterThan(0)
   expect(screen.queryByRole('button', { name: /remove/i })).not.toBeInTheDocument()
 })

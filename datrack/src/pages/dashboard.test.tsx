@@ -1,20 +1,26 @@
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { api } from '../api/client'
 import Dashboard from './dashboard'
-
+const invalidate = vi.fn()
 const mockUseAuth = vi.fn()
 vi.mock('../auth/AuthProvider', () => ({ useAuth: () => mockUseAuth() }))
 vi.mock('../api/client', () => ({
   api: { listSims: vi.fn(), addSim: vi.fn(), removeSim: vi.fn(), refreshSim: vi.fn(), refreshAll: vi.fn() },
-  ApiRequestError: class extends Error {},
+  ApiRequestError: class extends Error {
+    status: number
+    code: string
+    constructor(status: number, code: string, message: string) { super(message); this.status = status; this.code = code }
+  },
 }))
 
 beforeEach(() => {
   vi.clearAllMocks()
-  mockUseAuth.mockReturnValue({ session: { username: 'admin', role: 'admin' }, logout: vi.fn() })
+  mockUseAuth.mockReturnValue({ session: { username: 'admin', role: 'admin' }, logout: vi.fn(), invalidate })
 })
+
+afterEach(() => vi.useRealTimers())
 
 test('renders loading then an empty approved-line state', async () => {
   vi.mocked(api.listSims).mockResolvedValue([])
@@ -41,7 +47,7 @@ test('admin can add a SIM and refresh all balances', async () => {
 })
 
 test('reader sees masked data with no modifying controls', async () => {
-  mockUseAuth.mockReturnValue({ session: { username: 'viewer', role: 'reader' }, logout: vi.fn() })
+  mockUseAuth.mockReturnValue({ session: { username: 'viewer', role: 'reader' }, logout: vi.fn(), invalidate })
   vi.mocked(api.listSims).mockResolvedValue([{ id: '1', label: 'Main router', msisdn: '••••••••4567', balance: 2, balanceUnit: 'GB', expiresAt: null, lastAttemptAt: null, lastSuccessAt: null, status: 'fresh', errorCode: null }])
   render(<Dashboard />)
 
@@ -49,4 +55,29 @@ test('reader sees masked data with no modifying controls', async () => {
   expect(screen.queryByRole('button', { name: /add sim/i })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /refresh all/i })).not.toBeInTheDocument()
   expect(screen.queryByRole('button', { name: /remove/i })).not.toBeInTheDocument()
+})
+
+test('polls for updated balances so read-only users see scheduled refreshes', async () => {
+  vi.useFakeTimers()
+  vi.mocked(api.listSims)
+    .mockResolvedValueOnce([])
+    .mockResolvedValueOnce([{ id: '1', label: 'Company line', msisdn: '+2348135692193', balance: 5, balanceUnit: 'GB', expiresAt: null, lastAttemptAt: null, lastSuccessAt: null, status: 'fresh', errorCode: null }])
+  render(<Dashboard />)
+  await act(async () => {})
+  expect(screen.getByText(/no approved SIMs yet/i)).toBeInTheDocument()
+
+  await act(async () => { await vi.advanceTimersByTimeAsync(30_000) })
+
+  expect(screen.getByText('Company line')).toBeInTheDocument()
+  expect(api.listSims).toHaveBeenCalledTimes(2)
+})
+
+test('invalidates the local session when an API request returns 401', async () => {
+  const { ApiRequestError } = await import('../api/client')
+  vi.mocked(api.listSims).mockRejectedValue(new ApiRequestError(401, 'UNAUTHENTICATED', 'Authentication required.'))
+
+  render(<Dashboard />)
+
+  await act(async () => {})
+  expect(invalidate).toHaveBeenCalled()
 })

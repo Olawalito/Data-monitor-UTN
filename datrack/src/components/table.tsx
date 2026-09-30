@@ -27,9 +27,12 @@ function formatBalance(sim: SimRecord) {
   return `${new Intl.NumberFormat('en-GB', { maximumFractionDigits: 2 }).format(sim.balance)} ${sim.balanceUnit}`
 }
 
-function formatDate(value: string | null) {
+function formatDate(value: string | null, includeTime = false) {
   if (!value) return 'Not available'
-  return new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value))
+  return new Intl.DateTimeFormat('en-GB', {
+    day: '2-digit', month: 'short', year: 'numeric',
+    ...(includeTime ? { hour: '2-digit', minute: '2-digit' } : {}),
+  }).format(new Date(value))
 }
 
 export default function SimTable({ sims, role, busyIds, onRefresh, onRemove }: SimTableProps) {
@@ -43,7 +46,7 @@ export default function SimTable({ sims, role, busyIds, onRefresh, onRemove }: S
               <th className="px-5 py-4 font-semibold">Balance</th>
               <th className="px-5 py-4 font-semibold">Expiry</th>
               <th className="px-5 py-4 font-semibold">Status</th>
-              <th className="px-5 py-4 font-semibold">Last checked</th>
+              <th className="px-5 py-4 font-semibold">Last successful</th>
               {role === 'admin' && <th className="px-6 py-4 text-right font-semibold">Actions</th>}
             </tr>
           </thead>
@@ -59,7 +62,7 @@ export default function SimTable({ sims, role, busyIds, onRefresh, onRemove }: S
                   <td className="px-5 py-5 text-sm font-semibold text-slate-900">{formatBalance(sim)}</td>
                   <td className="px-5 py-5 text-sm text-slate-600">{formatDate(sim.expiresAt)}</td>
                   <td className="px-5 py-5"><span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyle[sim.status]}`}>{statusLabel[sim.status]}</span></td>
-                  <td className="px-5 py-5 text-sm text-slate-500">{formatDate(sim.lastAttemptAt)}</td>
+                  <td className="px-5 py-5 text-sm text-slate-500">{formatDate(sim.lastSuccessAt, true)}</td>
                   {role === 'admin' && (
                     <td className="px-6 py-5 text-right">
                       <div className="flex justify-end gap-2">

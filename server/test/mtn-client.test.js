@@ -157,14 +157,20 @@ test('rejects malformed token and Plans responses', async () => {
   const missingToken = clientFixture(async () => jsonResponse(200, { expires_in: 3600 }));
   await assert.rejects(() => missingToken.getDataPlan('+2348012345678'), (error) => error.code === 'MTN_AUTH_FAILED');
 
-  let call = 0;
-  const malformedPlan = clientFixture(async () => {
-    call += 1;
-    return call === 1
-      ? jsonResponse(200, { access_token: 'token', expires_in: 3600 })
-      : jsonResponse(200, plansPayload({ balance: null }));
-  });
-  await assert.rejects(() => malformedPlan.getDataPlan('+2348012345678'), (error) => error.code === 'MTN_BAD_RESPONSE');
+  for (const malformedValue of [null, '', '   ', false, [], {}]) {
+    let call = 0;
+    const malformedPlan = clientFixture(async () => {
+      call += 1;
+      return call === 1
+        ? jsonResponse(200, { access_token: 'token', expires_in: 3600 })
+        : jsonResponse(200, plansPayload({ balance: [{
+          balanceType: 'DATA',
+          expiryDate: null,
+          balanceDetail: { type: 'DATA', activeValue: malformedValue, activeUnit: 'MB' },
+        }] }));
+    });
+    await assert.rejects(() => malformedPlan.getDataPlan('+2348012345678'), (error) => error.code === 'MTN_BAD_RESPONSE');
+  }
 });
 
 test('times out a stalled MTN request', async () => {
@@ -181,4 +187,32 @@ test('times out a stalled MTN request', async () => {
   const client = clientFixture(fetchImpl, { timeoutMs: 5 });
 
   await assert.rejects(() => client.getDataPlan('+2348012345678'), (error) => error.code === 'MTN_TIMEOUT');
+});
+
+test('times out when an MTN response body stalls after the headers arrive', async () => {
+  const stalledResponse = {
+    ok: true,
+    status: 200,
+    json: () => new Promise(() => {}),
+  };
+
+  const tokenClient = clientFixture(async () => stalledResponse, { timeoutMs: 5 });
+  const tokenOutcome = await Promise.race([
+    tokenClient.getDataPlan('+2348012345678').then(() => 'resolved', (error) => error.code),
+    new Promise((resolve) => setTimeout(() => resolve('test-timeout'), 100)),
+  ]);
+  assert.equal(tokenOutcome, 'MTN_TIMEOUT');
+
+  let call = 0;
+  const plansClient = clientFixture(async () => {
+    call += 1;
+    return call === 1
+      ? jsonResponse(200, { access_token: 'token', expires_in: 3600 })
+      : stalledResponse;
+  }, { timeoutMs: 5 });
+  const plansOutcome = await Promise.race([
+    plansClient.getDataPlan('+2348012345678').then(() => 'resolved', (error) => error.code),
+    new Promise((resolve) => setTimeout(() => resolve('test-timeout'), 100)),
+  ]);
+  assert.equal(plansOutcome, 'MTN_TIMEOUT');
 });

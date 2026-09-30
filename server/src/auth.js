@@ -61,11 +61,11 @@ function createAuthService(config, options = {}) {
     if (recent.length >= maxAttempts) {
       throw authError(429, 'LOGIN_RATE_LIMITED', 'Too many login attempts. Try again later.');
     }
+    recent.push(now);
 
     const account = accounts.get(normalizedUsername);
     const valid = await verifyPassword(password, account?.hash || await DUMMY_HASH_PROMISE);
     if (!account || !valid) {
-      recent.push(now);
       return null;
     }
 

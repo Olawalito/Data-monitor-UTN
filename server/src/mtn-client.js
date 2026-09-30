@@ -29,12 +29,19 @@ function createMtnClient({
   let tokenCache = null;
   let tokenPromise = null;
 
-  async function request(url, options, errorCode) {
+  async function withinDeadline(errorCode, operation) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), timeoutMs);
+    let timer;
+    const timeout = new Promise((_, reject) => {
+      timer = setTimeout(() => {
+        controller.abort();
+        reject(safeError('MTN_TIMEOUT'));
+      }, timeoutMs);
+    });
     try {
-      return await fetchImpl(url, { ...options, signal: controller.signal });
+      return await Promise.race([operation(controller.signal), timeout]);
     } catch (error) {
+      if (error instanceof MtnError) throw error;
       if (error?.name === 'AbortError') throw safeError('MTN_TIMEOUT');
       throw safeError(errorCode);
     } finally {
@@ -49,22 +56,24 @@ function createMtnClient({
       client_id: consumerKey,
       client_secret: consumerSecret,
     });
-    const response = await request(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Accept: 'application/json',
-      },
-      body: body.toString(),
-    }, 'MTN_AUTH_FAILED');
-
-    if (!response.ok) throw safeError('MTN_AUTH_FAILED');
-    let payload;
-    try {
-      payload = await response.json();
-    } catch {
-      throw safeError('MTN_AUTH_FAILED');
-    }
+    const payload = await withinDeadline('MTN_AUTH_FAILED', async (signal) => {
+      const response = await fetchImpl(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Accept: 'application/json',
+        },
+        body: body.toString(),
+        signal,
+      });
+      if (!response.ok) throw safeError('MTN_AUTH_FAILED');
+      try {
+        return await response.json();
+      } catch (error) {
+        if (error?.name === 'AbortError') throw error;
+        throw safeError('MTN_AUTH_FAILED');
+      }
+    });
     const expiresIn = Number(payload.expires_in);
     if (typeof payload.access_token !== 'string' || !payload.access_token || !Number.isFinite(expiresIn) || expiresIn <= 0) {
       throw safeError('MTN_AUTH_FAILED');
@@ -90,7 +99,10 @@ function createMtnClient({
     const balances = payload?.data?.balance;
     if (!Array.isArray(balances)) throw safeError('MTN_BAD_RESPONSE');
     const dataBalance = balances.find((entry) => entry?.balanceDetail?.type === 'DATA');
-    const value = Number(dataBalance?.balanceDetail?.activeValue);
+    const rawValue = dataBalance?.balanceDetail?.activeValue;
+    const scalarValue = typeof rawValue === 'number'
+      || (typeof rawValue === 'string' && rawValue.trim() !== '');
+    const value = scalarValue ? Number(rawValue) : Number.NaN;
     const unit = dataBalance?.balanceDetail?.activeUnit;
     if (!dataBalance || !Number.isFinite(value) || value < 0 || !['MB', 'GB'].includes(unit)) {
       throw safeError('MTN_BAD_RESPONSE');
@@ -113,28 +125,30 @@ function createMtnClient({
     url.searchParams.set('idType', 'MSISDN');
     url.searchParams.set('segment', 'subscriber');
 
-    const response = await request(url, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'X-API-Key': consumerKey,
-        Accept: 'application/json',
-      },
-    }, 'MTN_UPSTREAM_FAILED');
+    const payload = await withinDeadline('MTN_UPSTREAM_FAILED', async (signal) => {
+      const response = await fetchImpl(url, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'X-API-Key': consumerKey,
+          Accept: 'application/json',
+        },
+        signal,
+      });
 
-    if (response.status === 401 || response.status === 403) {
-      tokenCache = null;
-      throw safeError('MTN_AUTH_FAILED');
-    }
-    if (response.status === 404) throw safeError('MTN_NOT_FOUND');
-    if (!response.ok) throw safeError('MTN_UPSTREAM_FAILED');
-
-    let payload;
-    try {
-      payload = await response.json();
-    } catch {
-      throw safeError('MTN_BAD_RESPONSE');
-    }
+      if (response.status === 401 || response.status === 403) {
+        tokenCache = null;
+        throw safeError('MTN_AUTH_FAILED');
+      }
+      if (response.status === 404) throw safeError('MTN_NOT_FOUND');
+      if (!response.ok) throw safeError('MTN_UPSTREAM_FAILED');
+      try {
+        return await response.json();
+      } catch (error) {
+        if (error?.name === 'AbortError') throw error;
+        throw safeError('MTN_BAD_RESPONSE');
+      }
+    });
     return normalizePlans(payload);
   }
 

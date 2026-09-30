@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { api, ApiRequestError } from '../api/client'
 import { useAuth } from '../auth/AuthProvider'
 import Header from '../components/Header'
@@ -6,7 +6,7 @@ import SimTable from '../components/table'
 import type { SimRecord } from '../types/api'
 
 export default function Dashboard() {
-  const { session, logout } = useAuth()
+  const { session, logout, invalidate } = useAuth()
   const [sims, setSims] = useState<SimRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -16,15 +16,36 @@ export default function Dashboard() {
   const [busyIds, setBusyIds] = useState<Set<string>>(new Set())
   const [refreshingAll, setRefreshingAll] = useState(false)
 
+  const showError = useCallback((caught: unknown) => {
+    if (caught instanceof ApiRequestError && caught.status === 401) {
+      invalidate()
+      return
+    }
+    setError(caught instanceof ApiRequestError ? caught.message : 'The local monitor could not complete that request.')
+  }, [invalidate])
+
   useEffect(() => {
-    api.listSims().then(setSims).catch(showError).finally(() => setLoading(false))
-  }, [])
+    let active = true
+    let inFlight = false
+    async function load() {
+      if (inFlight) return
+      inFlight = true
+      try {
+        const updated = await api.listSims()
+        if (active) setSims(updated)
+      } catch (caught) {
+        if (active) showError(caught)
+      } finally {
+        inFlight = false
+        if (active) setLoading(false)
+      }
+    }
+    void load()
+    const timer = window.setInterval(() => void load(), 30_000)
+    return () => { active = false; window.clearInterval(timer) }
+  }, [showError])
 
   if (!session) return null
-
-  function showError(caught: unknown) {
-    setError(caught instanceof ApiRequestError ? caught.message : 'The local monitor could not complete that request.')
-  }
 
   async function addSim(event: React.FormEvent) {
     event.preventDefault()

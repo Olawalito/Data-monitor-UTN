@@ -83,6 +83,17 @@ test('rate limits repeated failed logins within the configured window', async ()
   await assert.rejects(() => auth.login('admin', 'correct horse'), (error) => error.code === 'LOGIN_RATE_LIMITED');
 });
 
+test('reserves rate-limit slots before concurrent password checks complete', async () => {
+  const { auth } = await authFixture({ maxAttempts: 2, attemptWindowMs: 60_000 });
+
+  const attempts = await Promise.allSettled(
+    Array.from({ length: 10 }, () => auth.login('admin', 'wrong')),
+  );
+  assert.equal(attempts.filter((result) => result.status === 'fulfilled' && result.value === null).length, 2);
+  assert.equal(attempts.filter((result) => result.status === 'rejected' && result.reason.code === 'LOGIN_RATE_LIMITED').length, 8);
+  await assert.rejects(() => auth.login('admin', 'correct horse'), (error) => error.code === 'LOGIN_RATE_LIMITED');
+});
+
 test('enforces authentication and role requirements', async () => {
   const { auth } = await authFixture();
   const admin = await auth.login('admin', 'correct horse');
