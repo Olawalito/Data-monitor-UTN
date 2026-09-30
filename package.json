@@ -1,5 +1,12 @@
 {
-  "dependencies": {
-    "react-router-dom": "^7.18.4"
+  "name": "local-mtn-monitor",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "setup": "node server/scripts/setup.js",
+    "test": "npm test --prefix server && npm test --prefix datrack",
+    "build": "npm run build --prefix datrack",
+    "start": "npm start --prefix server",
+    "smoke": "node server/scripts/live-smoke.js"
   }
 }

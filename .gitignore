@@ -1,2 +1,5 @@
 .worktrees/
 .superpowers/
+server/data/sims.json
+server/data/sims.json.bak
+server/data/*.tmp
